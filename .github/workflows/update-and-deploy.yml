@@ -1,0 +1,73 @@
+name: 更新开奖数据并部署
+
+# 说明：
+#   1) 每天定时抓取一次双色球 / 大乐透最新开奖数据，写回 data/*.json
+#   2) 数据有变化时自动提交，然后把静态站点发布到 GitHub Pages
+#   3) 也可在 Actions 页面手动点 “Run workflow” 立即更新
+#
+# 时间均为 UTC；北京时间 = UTC + 8
+on:
+  schedule:
+    - cron: "40 13 * * *"   # 北京时间 21:40（双色球 21:15 / 大乐透 20:30 开奖后）
+    - cron: "40 14 * * *"   # 北京时间 22:40（兜底再抓一次）
+    - cron: "0 2 * * *"     # 北京时间 10:00（次日补抓）
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 准备 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 抓取最新开奖数据（失败则沿用已有数据，不中断部署）
+        continue-on-error: true
+        run: node server.js --sync
+
+      - name: 提交数据更新
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "数据无变化，跳过提交"
+          else
+            git commit -m "chore: 更新开奖数据 $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
+
+      - name: 构建静态站点
+        run: node build-static.js
+
+      - name: 配置 Pages
+        uses: actions/configure-pages@v5
+
+      - name: 上传站点产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 发布到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

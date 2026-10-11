@@ -1,0 +1,9 @@
+# 构建产物（由 Actions 生成，不入库）
+_site/
+
+# 本地运行时日志
+data/server.log
+data/server.err.log
+
+node_modules/
+.DS_Store

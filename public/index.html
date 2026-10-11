@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>双色球 / 大乐透 开奖号码筛选器</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="shell">
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brand">
+      <span class="brand-dot" aria-hidden="true"></span>
+      <h1>开奖号码筛选器</h1>
+    </div>
+    <div class="game-switch" role="tablist" aria-label="选择彩种">
+      <button type="button" class="game-btn is-active" role="tab" aria-selected="true" data-game="ssq">双色球</button>
+      <button type="button" class="game-btn" role="tab" aria-selected="false" data-game="dlt">大乐透</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="statusbar">
+    <span id="status-text">正在载入开奖数据…</span>
+    <button type="button" class="btn btn-ghost only-mobile" id="btn-orient">横屏查看</button>
+    <button type="button" class="btn btn-ghost" id="btn-refresh">刷新数据</button>
+  </div>
+
+  <nav class="tabs" role="tablist" aria-label="功能切换">
+    <button type="button" class="tab is-active" role="tab" aria-selected="true" data-tab="history">历史开奖号码</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" data-tab="same">历史同期</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" data-tab="weekday">每周同期</button>
+  </nav>
+
+  <!-- ============ TAB 1：历史开奖号码 ============ -->
+  <section class="panel is-active" data-panel="history" role="tabpanel">
+    <p class="hint">走势图读法：彩球＝该期开出该号，格内数字＝遗漏期数；底部四行为统计行。<span class="only-mobile">手机可点右上角「横屏查看」放大表格。</span></p>
+    <div class="toolbar">
+      <label class="field">
+        <span>显示期数</span>
+        <select id="history-count"></select>
+      </label>
+      <span class="hint" id="history-hint"></span>
+    </div>
+    <div class="trendwrap">
+      <table class="trend-table">
+        <thead id="history-head"></thead>
+        <tbody id="history-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ TAB 2：历史同期 + 号码池 / 胆拖 / 复式 ============ -->
+  <section class="panel" data-panel="same" role="tabpanel" hidden>
+    <div class="toolbar">
+      <label class="field">
+        <span>同期期号</span>
+        <select id="same-issue"></select>
+      </label>
+      <label class="field">
+        <span>显示期数</span>
+        <select id="same-count"></select>
+      </label>
+      <span class="hint" id="same-hint"></span>
+    </div>
+    <div class="trendwrap">
+      <table class="trend-table">
+        <thead id="same-head"></thead>
+        <tbody id="same-body"></tbody>
+      </table>
+    </div>
+
+    <h2 class="sub">号码池</h2>
+    <p class="hint">点击号码循环切换：<b>参与 → 排除 → 胆码</b>。条形长度＝该号码在这批同期号码中的出现率（按最高值归一）。</p>
+    <div class="pool-block">
+      <h3 class="sub3" id="pool-front-title">红球号码池</h3>
+      <div class="pool" id="pool-front"></div>
+    </div>
+    <div class="pool-block">
+      <h3 class="sub3" id="pool-back-title">蓝球号码池</h3>
+      <div class="pool" id="pool-back"></div>
+    </div>
+    <div class="legend">
+      <span class="lg"><i class="sw sw-idle"></i>参与</span>
+      <span class="lg"><i class="sw sw-dan"></i>胆码</span>
+      <span class="lg"><i class="sw sw-ex"></i>排除</span>
+      <span class="lg" id="pool-counts"></span>
+    </div>
+
+    <h2 class="sub">胆拖选号结果</h2>
+    <div class="grid2">
+      <label class="field full">
+        <span id="tuo-label">拖码（空格或逗号分隔）</span>
+        <input type="text" id="tuo-input" inputmode="numeric" placeholder="例如 05 09 18 22 26 31">
+      </label>
+      <label class="field full">
+        <span>胆码（来自上方号码池中标为「胆码」的号）</span>
+        <input type="text" id="tuo-dan" readonly>
+      </label>
+    </div>
+    <div class="row">
+      <button type="button" class="btn btn-ghost" id="tuo-fill">取号码池未排除号</button>
+      <button type="button" class="btn btn-ghost" id="tuo-clear">清空拖码</button>
+    </div>
+    <div class="summary" id="tuo-summary" aria-live="polite"></div>
+    <p class="warn" id="tuo-msg"></p>
+    <div class="list" id="tuo-list" aria-live="polite"></div>
+
+    <h2 class="sub">复式选号结果</h2>
+    <div class="grid2">
+      <label class="field full">
+        <span id="fs-label">前区复式号（空格或逗号分隔）</span>
+        <input type="text" id="fs-input" inputmode="numeric" placeholder="例如 01 05 09 13 18 22 26 31">
+      </label>
+      <label class="field full">
+        <span id="fs-back-label">后区号码（来自上方号码池中未被排除的号）</span>
+        <input type="text" id="fs-back" readonly>
+      </label>
+    </div>
+    <div class="row">
+      <button type="button" class="btn btn-ghost" id="fs-fill">取号码池未排除号</button>
+      <button type="button" class="btn btn-ghost" id="fs-clear">清空</button>
+    </div>
+    <div class="summary" id="fs-summary" aria-live="polite"></div>
+    <p class="warn" id="fs-msg"></p>
+    <div class="list" id="fs-list" aria-live="polite"></div>
+  </section>
+
+  <!-- ============ TAB 3：每周同期 ============ -->
+  <section class="panel" data-panel="weekday" role="tabpanel" hidden>
+    <div class="toolbar">
+      <div class="field">
+        <span>按开奖星期</span>
+        <div class="segmented" id="weekday-seg" role="group" aria-label="按开奖星期筛选"></div>
+      </div>
+      <label class="field">
+        <span>显示期数</span>
+        <select id="weekday-count"></select>
+      </label>
+      <span class="hint" id="weekday-hint"></span>
+    </div>
+    <div class="trendwrap">
+      <table class="trend-table">
+        <thead id="weekday-head"></thead>
+        <tbody id="weekday-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span id="foot-source"></span>
+    <span class="sep">·</span>
+    <span>数据仅供参考，开奖结果以官方公布为准</span>
+  </footer>
+</main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
